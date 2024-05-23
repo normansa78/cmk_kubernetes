@@ -4,11 +4,10 @@ metadata:
   name: checkmk-pv-claim
   namespace: checkmk
 spec:
-  # Please adjust to your system
-  storageClassName: fast
+  storageClassName: ""
+  volumeName: checkmk-pv
   resources:
     requests:
-      # Rather size larger for production environments
       storage: 16Gi
   accessModes:
     - ReadWriteOnce
