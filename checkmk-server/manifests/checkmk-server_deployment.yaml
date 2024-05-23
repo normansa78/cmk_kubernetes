@@ -6,7 +6,6 @@ metadata:
   name: checkmk
   namespace: checkmk
 spec:
-  # Multiple replicas are not supported at the moment
   replicas: 1
   selector:
     matchLabels:
@@ -19,34 +18,17 @@ spec:
       labels:
         app: checkmk
     spec:
-      serviceAccount: checkmk
       containers:
-      # For upadting Checkmk, just change the image. Don't downgrade between major versions
-      - image: registry.checkmk.com/enterprise/check-mk-enterprise:2.0.0p5
+      - image: checkmk/check-mk-raw:2.3.0
         imagePullPolicy: IfNotPresent
         name: checkmk
         ports:
         - containerPort: 5000
           name: webport
           protocol: TCP
-# Not supported at the moment
-#        livenessProbe:
-#          httpGet:
-#            path: /
-#            port: 5000
-#        readinessProbe:
-#          httpGet:
-#            path: /
-#            port: 5000
-        resources:
-# Not recommended to set
-#          limits:
-#            cpu:
-#            memory:
-          # Please adjust the requests to the size of your Checkmk instance. Rather increase then decrease the requests.
-          requests:
-            cpu: "2000m"
-            memory: "4Gi"
+        - containerPort: 8000
+          name: agent-receiver
+          protocol: TCP
         env:
         - name: CMK_PASSWORD
           valueFrom:
@@ -61,15 +43,26 @@ spec:
         volumeMounts:
           - mountPath: "/omd/sites"
             name: checkmk-pv-storage
+          - mountPath: "/opt/omd/sites/cmk/tmp"
+            name: tmpfs
+            subPath: cmk/tmp
+          - mountPath: "/etc/localtime"
+            name: localtime
+            readOnly: true
       restartPolicy: Always
       imagePullSecrets:
       - name: pull-secret
       securityContext: {}
       volumes:
-# Requires a persistent volume
         - name: checkmk-pv-storage
           persistentVolumeClaim:
             claimName: checkmk-pv-claim
-# In case no persistent volume available
-#        - name: omd
-#          emptyDir: {}
+        - name: tmpfs
+          emptyDir:
+            medium: Memory
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            type: File
+#Volume called tmpfs with emptyDir set to use memory (medium: Memory). This creates a temporary file system in RAM that the container can use for temporary storage, as specified by tmpfs in Docker.
+#Volume called localtime with hostPath pointing to /etc/localtime. This mounts the node's time file to the container, ensuring that the container uses the same time zone setting as the Docker node, in read-only mode (readOnly: true).
