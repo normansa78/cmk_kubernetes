@@ -6,17 +6,19 @@ metadata:
   name: checkmk
   namespace: checkmk
 spec:
+  type: NodePort
   ports:
-  - port: 80
-    name: http
+  - name: http
+    port: 80
     protocol: TCP
     targetPort: 5000
-  - port: 443
-    name: https
+  - name: https
+    port: 443
     protocol: TCP
     targetPort: 5000
+  - name: agent-receiver
+    port: 8000
+    protocol: TCP
+    targetPort: 8000
   selector:
     app: checkmk
-  sessionAffinity: None
-  type: NodePort
-#  type: LoadBalancer
